@@ -7,7 +7,7 @@ on:
       - 'develop'
       - 'release/**'
     paths:
-      - 'packages/*/package.json'
+      - 'project.yaml'
 
 jobs:
   check_and_tag:
@@ -25,18 +25,18 @@ jobs:
       - name: Check version changes
         id: version_check
         run: |
-          echo "🔍 Checking for version changes..."
+          echo "🔍 Checking for system_version changes..."
           
-          # Check vscode-extension version
-          CURRENT_VERSION=$(grep -oP '"version":\s*"\K[^"]+' packages/vscode-extension/package.json | head -1)
-          
-          # Get previous version
-          git show HEAD~1:packages/vscode-extension/package.json > /tmp/old_package.json 2>/dev/null || echo '{"version":"0.0.0"}' > /tmp/old_package.json
-          OLD_VERSION=$(grep -oP '"version":\s*"\K[^"]+' /tmp/old_package.json | head -1)
-          
+          # Get current system_version from project.yaml
+          CURRENT_VERSION=$(grep -E '^\s*system_version:' project.yaml | sed -E 's/^\s*system_version:\s*//;s/\s*$//')
           echo "📌 Current version: $CURRENT_VERSION"
+          
+          # Get previous system_version
+          git show HEAD~1:project.yaml > /tmp/old_project.yaml 2>/dev/null || echo "system_version: v0.0.0" > /tmp/old_project.yaml
+          OLD_VERSION=$(grep -E '^\s*system_version:' /tmp/old_project.yaml | sed -E 's/^\s*system_version:\s*//;s/\s*$//')
           echo "📌 Previous version: $OLD_VERSION"
           
+          # Compare versions
           if [ "$CURRENT_VERSION" != "$OLD_VERSION" ]; then
             echo "✅ Version changed: $OLD_VERSION -> $CURRENT_VERSION"
             echo "version_changed=true" >> $GITHUB_OUTPUT
@@ -76,6 +76,22 @@ jobs:
             echo "✅ Successfully created and pushed tag: $TAG_NAME"
             echo "tag_created=true" >> $GITHUB_OUTPUT
             echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Update project.yaml last_updated
+        if: steps.create_tag.outputs.tag_created == 'true'
+        run: |
+          CURRENT_DATE=$(date +%Y-%m-%d)
+          sed -i "s|last_updated: .*|last_updated: $CURRENT_DATE|" project.yaml
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add project.yaml
+          
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update last_updated date in project.yaml"
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ Updated last_updated date"
           fi
       
       - name: Create GitHub Release

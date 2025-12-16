@@ -1,4 +1,4 @@
-# Timesheet Agent
+# TimeTracker Agent
 
 ### This project provides multilanguage README files
 [![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md) [![zh-TW](https://img.shields.io/badge/lang-zh--tw-yellow.svg)](./README.zh-TW.md)
@@ -7,7 +7,7 @@
 
 ## Overview
 
-**Timesheet Agent** is an intelligent time tracking system designed specifically for developers. It automatically tracks your active work time in VS Code, associates it with Git commits/PRs, and exports professional Excel timesheets matching your company's format.
+**TimeTracker Agent** is an intelligent time tracking system designed specifically for developers. It automatically tracks your active work time in VS Code, associates it with Git commits/PRs, and exports professional Excel timesheets matching your company's format.
 
 ### Key Features
 

@@ -1,6 +1,6 @@
 {
-  "name": "timesheet-agent-extension",
-  "displayName": "Timesheet Agent",
+  "name": "timetracker-agent-extension",
+  "displayName": "TimeTracker Agent",
   "description": "Automatic work time tracking for developers",
   "version": "0.1.0",
   "publisher": "timesheet-agent",

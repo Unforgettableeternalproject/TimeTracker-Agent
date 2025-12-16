@@ -1,4 +1,4 @@
-# Timesheet Agent
+# TimeTracker Agent
 
 ### 這份專案有提供多語言 README 供參考
 [![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md) [![zh-TW](https://img.shields.io/badge/lang-zh--tw-yellow.svg)](./README.zh-TW.md)
@@ -7,7 +7,7 @@
 
 ## 專案簡介
 
-**Timesheet Agent** 是一個專為開發者設計的智慧工時追蹤系統，能夠自動記錄你在 VS Code 的工作時間、與 Git commits/PRs 關聯，並匯出符合公司格式的專業 Excel 工時表。
+**TimeTracker Agent** 是一個專為開發者設計的智慧工時追蹤系統，能夠自動記錄你在 VS Code 的工作時間、與 Git commits/PRs 關聯，並匯出符合公司格式的專業 Excel 工時表。
 
 ### 核心特色
 

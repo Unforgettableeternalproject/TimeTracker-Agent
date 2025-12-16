@@ -1,8 +1,8 @@
 {
-  "name": "timesheet-agent",
+  "name": "timetracker-agent",
   "version": "0.1.0",
   "private": true,
-  "description": "Automatic work time tracking agent for developers",
+  "description": "TimeTracker Agent - Automatic work time tracking for developers",
   "repository": {
     "type": "git",
     "url": "https://github.com/Unforgettableeternalproject/TimeTracker-Agent"

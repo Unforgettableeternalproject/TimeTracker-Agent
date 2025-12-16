@@ -36,3 +36,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### feat: Update project name and metadata across files; add project.yaml for configuration. 12/16
+
+> Date: Tue, 16 Dec 2025 21:19:03 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `c735aa208eb1cb7781dddaa9c4b28c1181b68614`
+
+---
+

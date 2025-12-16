@@ -2,7 +2,7 @@
 
 *Last updated: 2024-12-16*
 
-This file contains the version history and release notes for Timesheet Agent.
+This file contains the version history and release notes for TimeTracker Agent.
 
 ---
 
