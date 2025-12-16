@@ -64,13 +64,15 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "rebuild": "electron-rebuild -f -w better-sqlite3 -v 28.2.0"
   },
   "dependencies": {
     "@timesheet-agent/core": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
+    "electron-rebuild": "^3.2.9",
     "@vscode/vsce": "^2.22.0"
   }
 }

@@ -1,7 +1,5 @@
 import { DatabaseService } from '../db/db';
 import {
-  Workspace,
-  WorkspaceCreateInput,
   Session,
   SessionCreateInput,
   SessionUpdateInput,
@@ -79,7 +77,7 @@ export class SessionService {
 
     this.db.execute(
       `UPDATE sessions SET ${updates.join(', ')} WHERE id = ?`,
-      params
+      params as any[]
     );
 
     const session = this.db.queryOne<Session>(

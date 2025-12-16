@@ -1,5 +1,3 @@
-import { DatabaseService } from '../db/db';
-import { WorkItem, WorkItemCreateInput } from '../model/types';
 import * as child_process from 'child_process';
 import * as path from 'path';
 
@@ -7,7 +5,7 @@ import * as path from 'path';
  * Git service for interacting with git repositories
  */
 export class GitService {
-  constructor(private db: DatabaseService) {}
+  constructor() {}
 
   /**
    * Get git repository root path

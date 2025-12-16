@@ -111,7 +111,7 @@ export class WorkspaceManager {
 
     this.db.execute(
       `UPDATE workspaces SET ${fields.join(', ')} WHERE id = ?`,
-      params
+      params as any[]
     );
 
     const workspace = this.getWorkspace(id);

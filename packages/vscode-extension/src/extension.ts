@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { ActivityRecorder } from './telemetry/activityRecorder';
 import { WorkspaceTracker } from './telemetry/workspaceTracker';
 import { StatusBarManager } from './ui/statusBar';
 import { createDatabase } from '@timesheet-agent/core';

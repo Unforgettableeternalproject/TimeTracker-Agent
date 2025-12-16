@@ -48,3 +48,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### chore: update pnpm workspace configuration to ignore specific built dependencies and include only necessary ones.
+
+> Date: Tue, 16 Dec 2025 22:17:16 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `24d5d403c4e46f1e98117e5f85ace9e67d7c2801`
+
+---
+

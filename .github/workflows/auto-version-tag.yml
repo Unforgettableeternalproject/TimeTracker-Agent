@@ -42,8 +42,9 @@ jobs:
             echo "version_changed=true" >> $GITHUB_OUTPUT
             echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ Version unchanged, skipping tag"
+            echo "⚠️ Version unchanged, skipping all operations"
             echo "version_changed=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
       
       - name: Create and push tag
@@ -78,8 +79,7 @@ jobs:
             echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           fi
       
-      - name: Update project.yaml last_updated
-        if: steps.create_tag.outputs.tag_created == 'true'
+      - name: Update project.yaml last_updated && steps.version_check.outputs.version_changed == 'true'
         run: |
           CURRENT_DATE=$(date +%Y-%m-%d)
           sed -i "s|last_updated: .*|last_updated: $CURRENT_DATE|" project.yaml
@@ -89,12 +89,15 @@ jobs:
           git add project.yaml
           
           if ! git diff --staged --quiet; then
-            git commit -m "chore: update last_updated date in project.yaml"
+            git commit -m "chore: update last_updated date in project.yaml [skip ci]"
             git push origin HEAD:${{ github.ref_name }}
             echo "✅ Updated last_updated date"
+          else
+            echo "📭 No changes to last_updated date"
           fi
       
       - name: Create GitHub Release
+        if: steps.create_tag.outputs.tag_created == 'true' && steps.version_check.outputs.version_chang
         if: steps.create_tag.outputs.tag_created == 'true'
         uses: actions/create-release@v1
         env:

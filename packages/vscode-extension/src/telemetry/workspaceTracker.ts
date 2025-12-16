@@ -20,10 +20,10 @@ export class WorkspaceTracker {
   private checkInterval: NodeJS.Timeout | undefined;
   private disposables: vscode.Disposable[] = [];
 
-  constructor(private db: DatabaseService, private idleThreshold: number) {
+  constructor(db: DatabaseService, private idleThreshold: number) {
     this.workspaceManager = new WorkspaceManager(db);
     this.sessionService = new SessionService(db);
-    this.gitService = new GitService(db);
+    this.gitService = new GitService();
   }
 
   /**
@@ -101,7 +101,7 @@ export class WorkspaceTracker {
     });
 
     // Create activity recorder
-    const recorder = new ActivityRecorder(this.db, workspace.id, folder, this.idleThreshold);
+    const recorder = new ActivityRecorder(workspace.id, folder, this.idleThreshold);
 
     this.trackers.set(folderPath, {
       workspace,

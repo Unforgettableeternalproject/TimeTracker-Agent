@@ -1,2 +1,10 @@
 packages:
-  - 'packages/*'
+  - packages/*
+
+ignoredBuiltDependencies:
+  - '@vscode/vsce-sign'
+  - keytar
+  - lzma-native
+
+onlyBuiltDependencies:
+  - better-sqlite3

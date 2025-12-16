@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { DatabaseService, ActivityEvent, ActivityEventType } from '@timesheet-agent/core';
+import { ActivityEvent, ActivityEventType } from '@timesheet-agent/core';
 import { ActivityAggregator } from '@timesheet-agent/core';
 
 /**
@@ -11,7 +11,6 @@ export class ActivityRecorder {
   private workspaceId: number;
 
   constructor(
-    private db: DatabaseService,
     workspaceId: number,
     private folder: vscode.WorkspaceFolder,
     idleThreshold: number
@@ -63,9 +62,9 @@ export class ActivityRecorder {
       })
     );
 
-    // Terminal data written (represents terminal activity)
+    // Terminal activity
     this.disposables.push(
-      vscode.window.onDidWriteTerminalData(() => {
+      vscode.window.onDidOpenTerminal(() => {
         this.recordActivity('terminal_input');
       })
     );

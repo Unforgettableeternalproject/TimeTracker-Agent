@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import initSqlJs, { Database, SqlValue } from 'sql.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseOptions } from '../model/types';
@@ -7,7 +7,7 @@ import { DatabaseOptions } from '../model/types';
  * Database service for managing SQLite connection and queries
  */
 export class DatabaseService {
-  private db: Database.Database;
+  private db: Database | null = null;
   private readonly dbPath: string;
 
   constructor(options: DatabaseOptions) {
@@ -19,72 +19,138 @@ export class DatabaseService {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // Initialize database
-    this.db = new Database(this.dbPath, {
-      readonly: options.readonly || false,
-      fileMustExist: false,
-    });
+    // Initialize database synchronously
+    this.initializeDatabase(options.readonly || false);
+  }
 
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
-    
-    // Initialize schema if needed
-    this.initializeSchema();
+  /**
+   * Initialize sql.js and load/create database
+   */
+  private initializeDatabase(readonly: boolean): void {
+    // Note: This should ideally be async, but for simplicity we'll use sync file operations
+    const SQL = initSqlJs();
+    SQL.then(sqlJs => {
+      // Load existing database or create new one
+      if (fs.existsSync(this.dbPath)) {
+        const buffer = fs.readFileSync(this.dbPath);
+        this.db = new sqlJs.Database(buffer);
+      } else {
+        this.db = new sqlJs.Database();
+      }
+
+      // Enable foreign keys
+      this.db.run('PRAGMA foreign_keys = ON');
+      
+      // Initialize schema if needed
+      this.initializeSchema();
+      
+      // Save to disk
+      if (!readonly) {
+        this.save();
+      }
+    });
   }
 
   /**
    * Initialize database schema from SQL file
    */
   private initializeSchema(): void {
+    if (!this.db) return;
+    
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf-8');
-    this.db.exec(schema);
+    this.db.run(schema);
+  }
+
+  /**
+   * Save database to disk
+   */
+  private save(): void {
+    if (!this.db) return;
+    const data = this.db.export();
+    fs.writeFileSync(this.dbPath, Buffer.from(data));
   }
 
   /**
    * Get the underlying database instance
    */
-  getDatabase(): Database.Database {
+  getDatabase(): Database | null {
     return this.db;
   }
 
   /**
    * Execute a query that returns multiple rows
    */
-  query<T = unknown>(sql: string, params: unknown[] = []): T[] {
-    const stmt = this.db.prepare(sql);
-    return stmt.all(...params) as T[];
+  query<T = unknown>(sql: string, params: SqlValue[] = []): T[] {
+    if (!this.db) throw new Error('Database not initialized');
+    const result = this.db.exec(sql, params);
+    if (result.length === 0) return [];
+    
+    const columns = result[0].columns;
+    const values = result[0].values;
+    
+    return values.map(row => {
+      const obj: any = {};
+      columns.forEach((col, idx) => {
+        obj[col] = row[idx];
+      });
+      return obj as T;
+    });
   }
 
   /**
    * Execute a query that returns a single row
    */
-  queryOne<T = unknown>(sql: string, params: unknown[] = []): T | undefined {
-    const stmt = this.db.prepare(sql);
-    return stmt.get(...params) as T | undefined;
+  queryOne<T = unknown>(sql: string, params: SqlValue[] = []): T | undefined {
+    const results = this.query<T>(sql, params);
+    return results[0];
   }
 
   /**
    * Execute a write operation (INSERT, UPDATE, DELETE)
    */
-  execute(sql: string, params: unknown[] = []): Database.RunResult {
-    const stmt = this.db.prepare(sql);
-    return stmt.run(...params);
+  execute(sql: string, params: SqlValue[] = []): { changes: number; lastInsertRowid: number } {
+    if (!this.db) throw new Error('Database not initialized');
+    this.db.run(sql, params);
+    this.save();
+    
+    // Get last insert rowid
+    const result = this.db.exec('SELECT last_insert_rowid() as id');
+    const lastInsertRowid = result[0]?.values[0]?.[0] as number || 0;
+    
+    // Get changes count
+    const changesResult = this.db.exec('SELECT changes() as changes');
+    const changes = changesResult[0]?.values[0]?.[0] as number || 0;
+    
+    return { changes, lastInsertRowid };
   }
 
   /**
    * Execute multiple statements in a transaction
    */
   transaction<T>(fn: () => T): T {
-    const txn = this.db.transaction(fn);
-    return txn();
+    if (!this.db) throw new Error('Database not initialized');
+    this.db.run('BEGIN TRANSACTION');
+    try {
+      const result = fn();
+      this.db.run('COMMIT');
+      this.save();
+      return result;
+    } catch (error) {
+      this.db.run('ROLLBACK');
+      throw error;
+    }
   }
 
   /**
    * Close the database connection
    */
   close(): void {
-    this.db.close();
+    if (this.db) {
+      this.save();
+      this.db.close();
+      this.db = null;
+    }
   }
 
   /**
@@ -112,7 +178,9 @@ export class DatabaseService {
    * Vacuum the database to reclaim space
    */
   vacuum(): void {
-    this.db.exec('VACUUM');
+    if (!this.db) return;
+    this.db.run('VACUUM');
+    this.save();
   }
 
   /**
