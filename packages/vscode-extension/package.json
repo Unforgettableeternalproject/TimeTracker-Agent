@@ -1,0 +1,76 @@
+{
+  "name": "timesheet-agent-extension",
+  "displayName": "Timesheet Agent",
+  "description": "Automatic work time tracking for developers",
+  "version": "0.1.0",
+  "publisher": "timesheet-agent",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "timesheet-agent.addNote",
+        "title": "Timesheet: Add Note"
+      },
+      {
+        "command": "timesheet-agent.setTag",
+        "title": "Timesheet: Set Tag"
+      },
+      {
+        "command": "timesheet-agent.exportToday",
+        "title": "Timesheet: Export Today"
+      },
+      {
+        "command": "timesheet-agent.switchWorkspace",
+        "title": "Timesheet: Switch Workspace"
+      },
+      {
+        "command": "timesheet-agent.showSummary",
+        "title": "Timesheet: Show Summary"
+      }
+    ],
+    "configuration": {
+      "title": "Timesheet Agent",
+      "properties": {
+        "timesheetAgent.idleThresholdMinutes": {
+          "type": "number",
+          "default": 5,
+          "description": "Minutes of inactivity before considering the user idle"
+        },
+        "timesheetAgent.checkIntervalSeconds": {
+          "type": "number",
+          "default": 30,
+          "description": "How often to check for idle state (in seconds)"
+        },
+        "timesheetAgent.autoExport": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically export timesheet at end of day"
+        },
+        "timesheetAgent.databasePath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom database path (leave empty for default)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@timesheet-agent/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "idleThresholdMinutes": 5,
+  "checkIntervalSeconds": 30,
+  "classification": {
+    "projectNameOverride": null,
+    "customRules": [
+      {
+        "pattern": "^fix:",
+        "field": "commit_message",
+        "category": "修復",
+        "priority": 10
+      },
+      {
+        "pattern": "^feat:",
+        "field": "commit_message",
+        "category": "功能開發",
+        "priority": 10
+      },
+      {
+        "pattern": "^docs:",
+        "field": "commit_message",
+        "category": "文件撰寫",
+        "priority": 10
+      },
+      {
+        "pattern": "^refactor:",
+        "field": "commit_message",
+        "category": "重構",
+        "priority": 10
+      },
+      {
+        "pattern": "^test:",
+        "field": "commit_message",
+        "category": "測試",
+        "priority": 10
+      },
+      {
+        "pattern": "frontend/",
+        "field": "path",
+        "category": "前端開發",
+        "priority": 5
+      },
+      {
+        "pattern": "backend/",
+        "field": "path",
+        "category": "後端開發",
+        "priority": 5
+      },
+      {
+        "pattern": "api/",
+        "field": "path",
+        "category": "API開發",
+        "priority": 5
+      },
+      {
+        "pattern": "db/",
+        "field": "path",
+        "category": "資料庫",
+        "priority": 5
+      }
+    ]
+  },
+  "export": {
+    "templatePath": null,
+    "defaultDateRange": "month"
+  },
+  "git": {
+    "provider": "auto",
+    "remoteOverride": null
+  }
+}

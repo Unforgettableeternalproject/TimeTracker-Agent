@@ -1,0 +1,35 @@
+{
+  "name": "timesheet-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automatic work time tracking agent for developers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Unforgettableeternalproject/TimeTracker-Agent"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0"
+  },
+  "keywords": [
+    "timesheet",
+    "time-tracking",
+    "vscode-extension",
+    "productivity"
+  ]
+}
