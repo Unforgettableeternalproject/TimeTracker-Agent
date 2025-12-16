@@ -1,5 +1,6 @@
 import * as child_process from 'child_process';
 import * as path from 'path';
+import { GitCommit } from '../model/types';
 
 /**
  * Git service for interacting with git repositories
@@ -27,13 +28,26 @@ export class GitService {
    */
   getCurrentBranch(repoPath: string): string | null {
     try {
+      // Try to get current branch
       const result = child_process.execSync('git rev-parse --abbrev-ref HEAD', {
         cwd: repoPath,
         encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Suppress stderr
       });
       return result.trim();
     } catch {
-      return null;
+      // If HEAD doesn't exist (no commits yet), try to get default branch name from config
+      try {
+        const configResult = child_process.execSync('git config --get init.defaultBranch', {
+          cwd: repoPath,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        return configResult.trim() || 'main';
+      } catch {
+        // Fallback to 'main' if no config
+        return 'main';
+      }
     }
   }
 
@@ -45,6 +59,7 @@ export class GitService {
       const result = child_process.execSync(`git remote get-url ${remoteName}`, {
         cwd: repoPath,
         encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Suppress stderr
       });
       return result.trim();
     } catch {
@@ -169,11 +184,11 @@ export class GitService {
   /**
    * Watch for new commits (polling-based)
    */
-  async watchCommits(
+  watchCommits(
     repoPath: string,
     callback: (commit: GitCommit) => void,
     intervalMs: number = 10000
-  ): Promise<() => void> {
+  ): { dispose: () => void } {
     let lastCommit: string | null = null;
 
     // Get initial HEAD
@@ -203,14 +218,6 @@ export class GitService {
       }
     }, intervalMs);
 
-    return () => clearInterval(interval);
+    return { dispose: () => clearInterval(interval) };
   }
-}
-
-interface GitCommit {
-  sha: string;
-  author: string;
-  date: string;
-  message: string;
-  files_changed: string[];
 }

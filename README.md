@@ -50,7 +50,7 @@ timesheet-agent/
 
 **Technology Stack**:
 - TypeScript + Node.js 18+
-- SQLite (better-sqlite3)
+- SQLite (sql.js - WebAssembly-based, no native compilation)
 - VS Code Extension API
 - ExcelJS for report generation
 

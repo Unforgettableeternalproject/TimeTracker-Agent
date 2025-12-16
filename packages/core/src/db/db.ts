@@ -9,6 +9,7 @@ import { DatabaseOptions } from '../model/types';
 export class DatabaseService {
   private db: Database | null = null;
   private readonly dbPath: string;
+  private initPromise: Promise<void>;
 
   constructor(options: DatabaseOptions) {
     this.dbPath = options.path;
@@ -19,36 +20,41 @@ export class DatabaseService {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // Initialize database synchronously
-    this.initializeDatabase(options.readonly || false);
+    // Initialize database asynchronously
+    this.initPromise = this.initializeDatabase(options.readonly || false);
+  }
+
+  /**
+   * Wait for database to be initialized
+   */
+  async waitForInit(): Promise<void> {
+    await this.initPromise;
   }
 
   /**
    * Initialize sql.js and load/create database
    */
-  private initializeDatabase(readonly: boolean): void {
-    // Note: This should ideally be async, but for simplicity we'll use sync file operations
-    const SQL = initSqlJs();
-    SQL.then(sqlJs => {
-      // Load existing database or create new one
-      if (fs.existsSync(this.dbPath)) {
-        const buffer = fs.readFileSync(this.dbPath);
-        this.db = new sqlJs.Database(buffer);
-      } else {
-        this.db = new sqlJs.Database();
-      }
+  private async initializeDatabase(readonly: boolean): Promise<void> {
+    const sqlJs = await initSqlJs();
+    
+    // Load existing database or create new one
+    if (fs.existsSync(this.dbPath)) {
+      const buffer = fs.readFileSync(this.dbPath);
+      this.db = new sqlJs.Database(buffer);
+    } else {
+      this.db = new sqlJs.Database();
+    }
 
-      // Enable foreign keys
-      this.db.run('PRAGMA foreign_keys = ON');
-      
-      // Initialize schema if needed
-      this.initializeSchema();
-      
-      // Save to disk
-      if (!readonly) {
-        this.save();
-      }
-    });
+    // Enable foreign keys
+    this.db.run('PRAGMA foreign_keys = ON');
+    
+    // Initialize schema if needed
+    this.initializeSchema();
+    
+    // Save to disk
+    if (!readonly) {
+      this.save();
+    }
   }
 
   /**
@@ -83,27 +89,53 @@ export class DatabaseService {
    */
   query<T = unknown>(sql: string, params: SqlValue[] = []): T[] {
     if (!this.db) throw new Error('Database not initialized');
-    const result = this.db.exec(sql, params);
-    if (result.length === 0) return [];
     
-    const columns = result[0].columns;
-    const values = result[0].values;
-    
-    return values.map(row => {
-      const obj: any = {};
-      columns.forEach((col, idx) => {
-        obj[col] = row[idx];
-      });
-      return obj as T;
-    });
+    try {
+      console.log('[DB] Executing query:', sql, 'with params:', params);
+      
+      // Use prepared statement for parameterized queries
+      const stmt = this.db.prepare(sql);
+      stmt.bind(params);
+      
+      const results: T[] = [];
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        results.push(row as T);
+      }
+      stmt.free();
+      
+      console.log('[DB] Query returned', results.length, 'rows');
+      return results;
+    } catch (error) {
+      console.error('[DB] Query error:', error, 'SQL:', sql, 'Params:', params);
+      return [];
+    }
   }
 
   /**
    * Execute a query that returns a single row
    */
   queryOne<T = unknown>(sql: string, params: SqlValue[] = []): T | undefined {
-    const results = this.query<T>(sql, params);
-    return results[0];
+    if (!this.db) throw new Error('Database not initialized');
+    
+    try {
+      console.log('[DB] Executing queryOne:', sql, 'with params:', params);
+      
+      const stmt = this.db.prepare(sql);
+      stmt.bind(params);
+      
+      let result: T | undefined;
+      if (stmt.step()) {
+        result = stmt.getAsObject() as T;
+      }
+      stmt.free();
+      
+      console.log('[DB] QueryOne result:', result);
+      return result;
+    } catch (error) {
+      console.error('[DB] QueryOne error:', error, 'SQL:', sql, 'Params:', params);
+      return undefined;
+    }
   }
 
   /**
@@ -111,18 +143,46 @@ export class DatabaseService {
    */
   execute(sql: string, params: SqlValue[] = []): { changes: number; lastInsertRowid: number } {
     if (!this.db) throw new Error('Database not initialized');
-    this.db.run(sql, params);
-    this.save();
     
-    // Get last insert rowid
-    const result = this.db.exec('SELECT last_insert_rowid() as id');
-    const lastInsertRowid = result[0]?.values[0]?.[0] as number || 0;
-    
-    // Get changes count
-    const changesResult = this.db.exec('SELECT changes() as changes');
-    const changes = changesResult[0]?.values[0]?.[0] as number || 0;
-    
-    return { changes, lastInsertRowid };
+    try {
+      console.log('[DB] Executing write:', sql, 'with params:', params);
+      
+      const stmt = this.db.prepare(sql);
+      
+      // Check if bind succeeded
+      console.log('[DB] Binding params...');
+      stmt.bind(params);
+      
+      // Execute the statement
+      console.log('[DB] Executing step...');
+      const hasRow = stmt.step();
+      console.log('[DB] Step returned:', hasRow);
+      
+      stmt.free();
+      
+      // Check for errors using sqlite3 error functions
+      const errorResult = this.db.exec('SELECT last_insert_rowid() as id, changes() as changes');
+      console.log('[DB] Error check result:', errorResult);
+      
+      this.save();
+      
+      // Get last insert rowid
+      const lastInsertRowid = errorResult[0]?.values[0]?.[0] as number || 0;
+      
+      // Get changes count
+      const changes = errorResult[0]?.values[0]?.[1] as number || 0;
+      
+      console.log('[DB] Execute result: changes=', changes, 'lastInsertRowid=', lastInsertRowid);
+      
+      if (changes === 0 && sql.trim().toUpperCase().startsWith('INSERT')) {
+        throw new Error('INSERT failed: no rows affected. Check constraints or SQL syntax.');
+      }
+      
+      return { changes, lastInsertRowid };
+    } catch (error) {
+      console.error('[DB] Execute error:', error, 'SQL:', sql, 'Params:', params);
+      throw error;
+    }
   }
 
   /**

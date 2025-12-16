@@ -60,3 +60,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### refactor: clean up pnpm-workspace.yaml by removing unnecessary comments and onlyBuiltDependencies entry. 12/16
+
+> Date: Tue, 16 Dec 2025 23:16:20 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `08f3861d1fa7342dcf1a93ba8e256ddfae5a3efc`
+
+---
+

@@ -9,7 +9,7 @@ let statusBar: StatusBarManager | undefined;
 /**
  * Extension activation
  */
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   console.log('Timesheet Agent is now active');
 
   // Get configuration
@@ -19,10 +19,14 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Initialize database
   const db = createDatabase(dbPath);
+  
+  // Wait for database to be initialized
+  await db.waitForInit();
+  console.log('Database initialized');
 
   // Initialize workspace tracker
   workspaceTracker = new WorkspaceTracker(db, idleThreshold);
-  workspaceTracker.start();
+  await workspaceTracker.start();
 
   // Initialize status bar
   statusBar = new StatusBarManager(workspaceTracker);
