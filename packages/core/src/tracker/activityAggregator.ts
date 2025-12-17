@@ -52,10 +52,22 @@ export class ActivityAggregator {
    */
   getAccumulatedSeconds(): number {
     if (this.isCurrentlyActive) {
-      // Include current active period up to now
+      // Check if we're still actually active or have gone idle
       const now = Date.now();
-      const currentActiveSeconds = Math.floor((now - this.activeStartTime) / 1000);
-      return this.accumulatedSeconds + currentActiveSeconds;
+      const idleMillis = this.idleThresholdMinutes * 60 * 1000;
+      const timeSinceLastActivity = now - this.lastActivityTime;
+
+      if (timeSinceLastActivity > idleMillis) {
+        // We've gone idle - only count up to idle threshold after last activity
+        const effectiveEndTime = this.lastActivityTime + idleMillis;
+        const activeMillis = effectiveEndTime - this.activeStartTime;
+        const activeSeconds = Math.max(0, Math.floor(activeMillis / 1000));
+        return this.accumulatedSeconds + activeSeconds;
+      } else {
+        // Still active - include current active period up to now
+        const currentActiveSeconds = Math.floor((now - this.activeStartTime) / 1000);
+        return this.accumulatedSeconds + currentActiveSeconds;
+      }
     }
 
     return this.accumulatedSeconds;

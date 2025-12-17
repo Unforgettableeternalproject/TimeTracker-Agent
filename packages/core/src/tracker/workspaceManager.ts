@@ -11,22 +11,33 @@ export class WorkspaceManager {
    * Create a new workspace
    */
   createWorkspace(input: WorkspaceCreateInput): Workspace {
-    const result = this.db.execute(
-      `INSERT INTO workspaces (workspace_path, workspace_name, is_active)
-       VALUES (?, ?, ?)`,
-      [input.workspace_path, input.workspace_name, input.is_active !== false ? 1 : 0]
-    );
+    try {
+      console.log('[WorkspaceManager] Creating workspace:', input);
+      
+      const result = this.db.execute(
+        `INSERT INTO workspaces (workspace_path, workspace_name, is_active)
+         VALUES (?, ?, ?)`,
+        [input.workspace_path, input.workspace_name, input.is_active !== false ? 1 : 0]
+      );
 
-    const workspace = this.db.queryOne<Workspace>(
-      'SELECT * FROM workspaces WHERE id = ?',
-      [result.lastInsertRowid]
-    );
+      console.log('[WorkspaceManager] Insert result:', result);
 
-    if (!workspace) {
-      throw new Error('Failed to create workspace');
+      const workspace = this.db.queryOne<Workspace>(
+        'SELECT * FROM workspaces WHERE id = ?',
+        [result.lastInsertRowid]
+      );
+
+      console.log('[WorkspaceManager] Query result:', workspace);
+
+      if (!workspace) {
+        throw new Error('Failed to create workspace: workspace not found after insert');
+      }
+
+      return this.normalizeWorkspace(workspace);
+    } catch (error) {
+      console.error('[WorkspaceManager] Error creating workspace:', error);
+      throw new Error(`Failed to create workspace: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return this.normalizeWorkspace(workspace);
   }
 
   /**
@@ -111,7 +122,7 @@ export class WorkspaceManager {
 
     this.db.execute(
       `UPDATE workspaces SET ${fields.join(', ')} WHERE id = ?`,
-      params
+      params as any[]
     );
 
     const workspace = this.getWorkspace(id);

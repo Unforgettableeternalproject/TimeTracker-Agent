@@ -10,7 +10,7 @@ interface SummarizeOptions {
 /**
  * Summarize command implementation
  */
-export function summarizeCommand(options: SummarizeOptions) {
+export async function summarizeCommand(options: SummarizeOptions) {
   try {
     const targetDate = options.date || format(new Date(), 'yyyy-MM-dd');
 
@@ -18,6 +18,7 @@ export function summarizeCommand(options: SummarizeOptions) {
     console.log();
 
     const db = createDatabase();
+    await db.waitForInit();
 
     // Get total active time
     let sql = `
@@ -100,6 +101,7 @@ export function summarizeCommand(options: SummarizeOptions) {
       console.log(chalk.gray('   Tip: Use "timesheet fixup" to allocate this time'));
     }
 
+    db.close();
     db.close();
   } catch (error) {
     console.error(chalk.red('❌ Summarize failed:'), error);

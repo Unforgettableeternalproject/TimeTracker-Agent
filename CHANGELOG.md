@@ -48,3 +48,51 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### chore: update pnpm workspace configuration to ignore specific built dependencies and include only necessary ones.
+
+> Date: Tue, 16 Dec 2025 22:17:16 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `24d5d403c4e46f1e98117e5f85ace9e67d7c2801`
+
+---
+
+### refactor: clean up pnpm-workspace.yaml by removing unnecessary comments and onlyBuiltDependencies entry. 12/16
+
+> Date: Tue, 16 Dec 2025 23:16:20 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `08f3861d1fa7342dcf1a93ba8e256ddfae5a3efc`
+
+---
+
+### feat: add CD pipeline and manual work item creation
+
+> Date: Wed, 17 Dec 2025 22:36:48 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `ced4dd93fc4c8406e49b411bf6b8c047d1010536`
+
+---
+
+### chore: bump version to v0.2.0
+
+> Date: Wed, 17 Dec 2025 22:37:17 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `20400cee30e438819f72907adcb1b205de7a524b`
+
+---
+

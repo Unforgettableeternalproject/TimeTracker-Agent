@@ -1,7 +1,5 @@
 import { DatabaseService } from '../db/db';
 import {
-  Workspace,
-  WorkspaceCreateInput,
   Session,
   SessionCreateInput,
   SessionUpdateInput,
@@ -17,22 +15,33 @@ export class SessionService {
    * Create a new session
    */
   createSession(input: SessionCreateInput): Session {
-    const result = this.db.execute(
-      `INSERT INTO sessions (workspace_id, repo, branch, start_at)
-       VALUES (?, ?, ?, ?)`,
-      [input.workspace_id, input.repo, input.branch || null, input.start_at]
-    );
+    try {
+      console.log('[SessionService] Creating session:', input);
+      
+      const result = this.db.execute(
+        `INSERT INTO sessions (workspace_id, repo, branch, start_at)
+         VALUES (?, ?, ?, ?)`,
+        [input.workspace_id, input.repo, input.branch || null, input.start_at]
+      );
 
-    const session = this.db.queryOne<Session>(
-      'SELECT * FROM sessions WHERE id = ?',
-      [result.lastInsertRowid]
-    );
+      console.log('[SessionService] Insert result:', result);
 
-    if (!session) {
-      throw new Error('Failed to create session');
+      const session = this.db.queryOne<Session>(
+        'SELECT * FROM sessions WHERE id = ?',
+        [result.lastInsertRowid]
+      );
+
+      console.log('[SessionService] Query result:', session);
+
+      if (!session) {
+        throw new Error('Failed to create session: session not found after insert');
+      }
+
+      return this.normalizeSession(session);
+    } catch (error) {
+      console.error('[SessionService] Error creating session:', error);
+      throw new Error(`Failed to create session: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return this.normalizeSession(session);
   }
 
   /**
@@ -79,7 +88,7 @@ export class SessionService {
 
     this.db.execute(
       `UPDATE sessions SET ${updates.join(', ')} WHERE id = ?`,
-      params
+      params as any[]
     );
 
     const session = this.db.queryOne<Session>(

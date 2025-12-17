@@ -28,6 +28,7 @@ export async function exportCommand(options: ExportOptions) {
 
     // Initialize database
     const db = createDatabase();
+    await db.waitForInit();
 
     // Query data
     const rows = queryTimesheetData(db, fromDate, toDate, options.workspace);

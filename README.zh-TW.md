@@ -35,7 +35,7 @@ timesheet-agent/
 
 **技術堆疊**：
 - TypeScript + Node.js 18+
-- SQLite (better-sqlite3)
+- SQLite (sql.js - WebAssembly 版本，無需原生編譯)
 - VS Code Extension API
 - ExcelJS 報表產生
 

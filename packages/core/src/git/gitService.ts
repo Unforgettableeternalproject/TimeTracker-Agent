@@ -1,13 +1,12 @@
-import { DatabaseService } from '../db/db';
-import { WorkItem, WorkItemCreateInput } from '../model/types';
 import * as child_process from 'child_process';
 import * as path from 'path';
+import { GitCommit } from '../model/types';
 
 /**
  * Git service for interacting with git repositories
  */
 export class GitService {
-  constructor(private db: DatabaseService) {}
+  constructor() {}
 
   /**
    * Get git repository root path
@@ -29,13 +28,26 @@ export class GitService {
    */
   getCurrentBranch(repoPath: string): string | null {
     try {
+      // Try to get current branch
       const result = child_process.execSync('git rev-parse --abbrev-ref HEAD', {
         cwd: repoPath,
         encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Suppress stderr
       });
       return result.trim();
     } catch {
-      return null;
+      // If HEAD doesn't exist (no commits yet), try to get default branch name from config
+      try {
+        const configResult = child_process.execSync('git config --get init.defaultBranch', {
+          cwd: repoPath,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        return configResult.trim() || 'main';
+      } catch {
+        // Fallback to 'main' if no config
+        return 'main';
+      }
     }
   }
 
@@ -47,6 +59,7 @@ export class GitService {
       const result = child_process.execSync(`git remote get-url ${remoteName}`, {
         cwd: repoPath,
         encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Suppress stderr
       });
       return result.trim();
     } catch {
@@ -171,20 +184,23 @@ export class GitService {
   /**
    * Watch for new commits (polling-based)
    */
-  async watchCommits(
+  watchCommits(
     repoPath: string,
     callback: (commit: GitCommit) => void,
     intervalMs: number = 10000
-  ): Promise<() => void> {
+  ): { dispose: () => void } {
     let lastCommit: string | null = null;
+
+    console.log('[GitService] Starting commit watcher for:', repoPath);
 
     // Get initial HEAD
     try {
       lastCommit = child_process
         .execSync('git rev-parse HEAD', { cwd: repoPath, encoding: 'utf-8' })
         .trim();
-    } catch {
-      // Ignore
+      console.log('[GitService] Initial HEAD:', lastCommit?.substring(0, 7));
+    } catch (error) {
+      console.log('[GitService] No initial HEAD found (empty repo?)');
     }
 
     const interval = setInterval(() => {
@@ -195,24 +211,23 @@ export class GitService {
 
         if (lastCommit && currentHead !== lastCommit) {
           // New commit detected
+          console.log('[GitService] New commit detected! Old:', lastCommit.substring(0, 7), 'New:', currentHead.substring(0, 7));
           const newCommits = this.getCommitsSince(repoPath, lastCommit);
+          console.log('[GitService] Processing', newCommits.length, 'new commits');
           newCommits.reverse().forEach((commit) => callback(commit));
         }
 
         lastCommit = currentHead;
-      } catch {
-        // Ignore errors
+      } catch (error) {
+        console.error('[GitService] Error in commit watcher:', error);
       }
     }, intervalMs);
 
-    return () => clearInterval(interval);
-  }
-}
+    console.log('[GitService] Commit watcher started (polling every', intervalMs, 'ms)');
 
-interface GitCommit {
-  sha: string;
-  author: string;
-  date: string;
-  message: string;
-  files_changed: string[];
+    return { dispose: () => {
+      console.log('[GitService] Stopping commit watcher for:', repoPath);
+      clearInterval(interval);
+    }};
+  }
 }

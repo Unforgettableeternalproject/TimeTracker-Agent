@@ -227,11 +227,16 @@ npm publish  # 如果要發布到 npm
 
 ## 架構決策記錄
 
-### 為什麼用 SQLite？
+### 為什麼用 SQLite (sql.js)？
 
 - 輕量、不需額外服務
 - 本地優先，離線可用
 - 方便備份（單一檔案）
+- **sql.js 優勢**：
+  - WebAssembly 實作，無需原生模組編譯
+  - 完美支援 VS Code Extension（無 Electron 版本相容問題）
+  - 跨平台，任何環境都能運行
+  - 犧牲少許性能換取易用性與穩定性
 
 ### 為什麼用 Monorepo？
 

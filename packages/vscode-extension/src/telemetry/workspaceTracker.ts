@@ -4,6 +4,7 @@ import {
   WorkspaceManager,
   SessionService,
   GitService,
+  GitCommit,
   Workspace,
   Session,
 } from '@timesheet-agent/core';
@@ -17,23 +18,25 @@ export class WorkspaceTracker {
   private workspaceManager: WorkspaceManager;
   private sessionService: SessionService;
   private gitService: GitService;
+  private db: DatabaseService;
   private checkInterval: NodeJS.Timeout | undefined;
   private disposables: vscode.Disposable[] = [];
 
-  constructor(private db: DatabaseService, private idleThreshold: number) {
+  constructor(db: DatabaseService, private idleThreshold: number) {
+    this.db = db;
     this.workspaceManager = new WorkspaceManager(db);
     this.sessionService = new SessionService(db);
-    this.gitService = new GitService(db);
+    this.gitService = new GitService();
   }
 
   /**
    * Start tracking all workspace folders
    */
-  start(): void {
+  async start(): Promise<void> {
     // Track existing workspace folders
     if (vscode.workspace.workspaceFolders) {
       for (const folder of vscode.workspace.workspaceFolders) {
-        this.addWorkspace(folder);
+        await this.addWorkspace(folder);
       }
     }
 
@@ -73,46 +76,84 @@ export class WorkspaceTracker {
   /**
    * Add a workspace folder for tracking
    */
-  private addWorkspace(folder: vscode.WorkspaceFolder): void {
+  private async addWorkspace(folder: vscode.WorkspaceFolder): Promise<void> {
     const folderPath = folder.uri.fsPath;
 
     if (this.trackers.has(folderPath)) {
       return; // Already tracking
     }
 
-    // Get or create workspace in database
-    const workspace = this.workspaceManager.getOrCreateWorkspace(folderPath, folder.name);
+    try {
+      console.log(`[TimeTracker] Starting to track workspace: ${folder.name} at ${folderPath}`);
+      
+      // Get or create workspace in database
+      console.log(`[TimeTracker] Creating/getting workspace in database...`);
+      const workspace = this.workspaceManager.getOrCreateWorkspace(folderPath, folder.name);
+      console.log(`[TimeTracker] Workspace created/retrieved: ID=${workspace.id}`);
 
-    // Get git info
-    const repoRoot = this.gitService.getRepoRoot(folderPath);
-    const repo = repoRoot
-      ? this.gitService.parseRepoName(
-          this.gitService.getRemoteUrl(repoRoot) || folderPath
-        )
-      : folder.name;
-    const branch = repoRoot ? this.gitService.getCurrentBranch(repoRoot) : null;
+      // Get git info
+      console.log(`[TimeTracker] Getting Git info...`);
+      const repoRoot = this.gitService.getRepoRoot(folderPath);
+      console.log(`[TimeTracker] Git repo root: ${repoRoot || 'Not a git repository'}`);
+      
+      let repo = folder.name;
+      let branch: string | null = null;
+      
+      if (repoRoot) {
+        // Try to get remote URL for repo name
+        const remoteUrl = this.gitService.getRemoteUrl(repoRoot);
+        if (remoteUrl) {
+          repo = this.gitService.parseRepoName(remoteUrl);
+        }
+        
+        // Get branch (will return default branch name if no commits yet)
+        branch = this.gitService.getCurrentBranch(repoRoot);
+      }
+      
+      console.log(`[TimeTracker] Repo: ${repo}, Branch: ${branch || 'N/A'}`);
 
-    // Create session
-    const session = this.sessionService.createSession({
-      workspace_id: workspace.id,
-      repo,
-      branch: branch || undefined,
-      start_at: new Date().toISOString(),
-    });
+      // Create session (using folder open time as start)
+      console.log(`[TimeTracker] Creating session...`);
+      const session = this.sessionService.createSession({
+        workspace_id: workspace.id,
+        repo,
+        branch: branch || undefined,
+        start_at: new Date().toISOString(),
+      });
+      console.log(`[TimeTracker] Session created: ID=${session.id}`);
 
-    // Create activity recorder
-    const recorder = new ActivityRecorder(this.db, workspace.id, folder, this.idleThreshold);
+      // Create activity recorder
+      console.log(`[TimeTracker] Creating activity recorder...`);
+      const recorder = new ActivityRecorder(workspace.id, folder, this.idleThreshold);
 
-    this.trackers.set(folderPath, {
-      workspace,
-      session,
-      recorder,
-      folder,
-      repo,
-      branch: branch || undefined,
-    });
+      // Setup Git commit watcher
+      if (repoRoot) {
+        console.log(`[TimeTracker] Setting up Git watcher...`);
+        this.setupGitWatcher(folderPath, workspace.id, repoRoot);
+      }
 
-    console.log(`Started tracking workspace: ${folder.name}`);
+      this.trackers.set(folderPath, {
+        workspace,
+        session,
+        recorder,
+        folder,
+        repo,
+        branch: branch || undefined,
+      });
+
+      console.log(`[TimeTracker] ✓ Successfully started tracking workspace: ${folder.name}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : '';
+      
+      console.error(`[TimeTracker] ✗ Failed to track workspace ${folder.name}:`, errorMessage);
+      console.error(`[TimeTracker] Error stack:`, errorStack);
+      console.error(`[TimeTracker] Full error object:`, error);
+      
+      vscode.window.showErrorMessage(
+        `TimeTracker: Failed to track workspace "${folder.name}": ${errorMessage}`
+      );
+    }
   }
 
   /**
@@ -127,6 +168,133 @@ export class WorkspaceTracker {
       state.recorder.dispose();
       this.trackers.delete(folderPath);
       console.log(`Stopped tracking workspace: ${folder.name}`);
+    }
+  }
+
+  /**
+   * Setup Git commit watcher for a workspace
+   */
+  private setupGitWatcher(_folderPath: string, workspaceId: number, repoRoot: string): void {
+    // First, check if there are any existing commits that we haven't processed yet
+    const recentCommits = this.gitService.getRecentCommits(repoRoot, '7 days ago', 50);
+
+    console.log(`[TimeTracker] Found ${recentCommits.length} recent commits in repo`);
+
+    // Process any commits we haven't seen yet (check by commit_sha to avoid duplicates)
+    for (const commit of recentCommits.reverse()) {
+      const exists = this.db.queryOne(
+        `SELECT id FROM work_items WHERE commit_sha = ? AND workspace_id = ?`,
+        [commit.sha, workspaceId]
+      );
+
+      if (!exists) {
+        console.log(`[TimeTracker] Processing existing commit: ${commit.sha.substring(0, 7)}`);
+        this.handleNewCommit(workspaceId, commit).catch(err =>
+          console.error('[TimeTracker] Error processing existing commit:', err)
+        );
+      } else {
+        console.log(`[TimeTracker] Skipping already processed commit: ${commit.sha.substring(0, 7)}`);
+      }
+    }
+
+    // Watch for new commits using git log
+    const disposable = this.gitService.watchCommits(repoRoot, async (commit) => {
+      // Double check we haven't already processed this commit
+      const exists = this.db.queryOne(
+        `SELECT id FROM work_items WHERE commit_sha = ? AND workspace_id = ?`,
+        [commit.sha, workspaceId]
+      );
+      
+      if (!exists) {
+        await this.handleNewCommit(workspaceId, commit);
+      }
+    });
+
+    this.disposables.push(disposable);
+  }
+
+  /**
+   * Handle new Git commit
+   */
+  private async handleNewCommit(
+    workspaceId: number,
+    commit: GitCommit
+  ): Promise<void> {
+    try {
+      console.log(`[TimeTracker] New commit detected: ${commit.sha.substring(0, 7)} - ${commit.message}`);
+
+      // Get unallocated sessions since last commit
+      const unallocatedSessions = this.sessionService.getUnallocatedSessions(workspaceId);
+      
+      console.log(`[TimeTracker] Found ${unallocatedSessions.length} unallocated sessions`);
+      
+      if (!Array.isArray(unallocatedSessions)) {
+        console.error('getUnallocatedSessions did not return an array:', unallocatedSessions);
+        return;
+      }
+      
+      // If no previous work items, calculate from workspace start
+      const totalSeconds = unallocatedSessions.reduce(
+        (sum, session) => sum + (session.active_seconds || 0),
+        0
+      );
+
+    // Create work item for this commit
+    const trackerState = Array.from(this.trackers.values()).find(t => t.workspace.id === workspaceId);
+    const repoRoot = trackerState ? this.gitService.getRepoRoot(trackerState.folder.uri.fsPath) : null;
+    
+    const remoteUrl = repoRoot ? this.gitService.getRemoteUrl(repoRoot) : null;
+    const repoName = remoteUrl 
+      ? this.gitService.parseRepoName(remoteUrl) 
+      : trackerState?.folder.name || 'unknown';
+      
+    const githubUrl = remoteUrl && remoteUrl.includes('github.com')
+      ? `https://github.com/${repoName}/commit/${commit.sha}`
+      : null;
+
+    // Parse commit type from message (e.g., "feat:", "fix:", "docs:")
+    // For commits, the type field indicates it's a 'commit' (vs 'pr_merge' or 'manual')
+    const workItem = this.db.execute(
+      `INSERT INTO work_items (workspace_id, repo, type, title, detail, occurred_at, url, commit_sha, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      [
+        workspaceId,
+        repoName,
+        'commit', // This is a commit work item
+        commit.message.split('\n')[0].substring(0, 200), // First line as title
+        commit.message, // Full message as detail
+        commit.date,
+        githubUrl,
+        commit.sha
+      ] as any[]
+    );
+
+    console.log(`[TimeTracker] Work item created: ID=${workItem.lastInsertRowid}`);
+
+    // Create allocation for unallocated sessions
+    if (unallocatedSessions.length > 0) {
+      const totalHours = totalSeconds / 3600;
+      const commitDate = new Date(commit.date).toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      this.db.execute(
+        `INSERT INTO allocations (work_item_id, date, hours, created_at)
+         VALUES (?, ?, ?, datetime('now'))`,
+        [workItem.lastInsertRowid, commitDate, totalHours] as any[]
+      );
+
+      // Mark all unallocated sessions as allocated
+      for (const session of unallocatedSessions) {
+        this.sessionService.updateSession(session.id, { is_allocated: true });
+      }
+
+      console.log(
+        `[TimeTracker] Allocated ${totalSeconds}s (${totalHours.toFixed(2)}h) from ${unallocatedSessions.length} sessions to commit ${commit.sha.substring(0, 7)}`
+      );
+    } else {
+      console.log(`[TimeTracker] No unallocated sessions to allocate to this commit`);
+    }
+    } catch (error) {
+      console.error('Error handling commit:', error);
     }
   }
 

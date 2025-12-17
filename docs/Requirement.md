@@ -70,8 +70,8 @@ timesheet-agent/
 
 * Extension：TypeScript
 * Core/CLI：Node.js + TypeScript
-* DB：SQLite（用 `better-sqlite3` 或 `sqlite3`）
-* Excel：`exceljs` 或 `openpyxl`（如果你偏 Python，也能把 cli 換成 Python；但全 Node 會比較一致）
+* DB：SQLite（用 `sql.js` - WebAssembly 版本，避免原生模組編譯問題）
+* Excel：`exceljs`
 
 ---
 
