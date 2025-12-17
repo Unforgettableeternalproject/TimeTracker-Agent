@@ -3,9 +3,7 @@ name: Auto Version Tag
 on:
   push:
     branches:
-      - 'main'
-      - 'develop'
-      - 'release/**'
+      - 'main'  # Only create tags when merged to main
     paths:
       - 'project.yaml'
 

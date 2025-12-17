@@ -96,3 +96,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: only create tags on main branch
+
+> Date: Wed, 17 Dec 2025 22:51:21 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `10d9bfc9fbcdc0986dce9c7ffcd753cb28570138`
+
+---
+
