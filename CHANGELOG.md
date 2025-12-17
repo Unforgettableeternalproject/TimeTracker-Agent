@@ -84,3 +84,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### chore: bump version to v0.2.0
+
+> Date: Wed, 17 Dec 2025 22:37:17 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `20400cee30e438819f72907adcb1b205de7a524b`
+
+---
+
