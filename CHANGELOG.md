@@ -204,3 +204,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: use --no-frozen-lockfile in release workflow
+
+> Date: Wed, 17 Dec 2025 23:11:11 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `13156842e8cda60be59bfa75c717b5e0c69222ac`
+
+---
+
