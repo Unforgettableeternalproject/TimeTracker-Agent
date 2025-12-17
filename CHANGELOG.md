@@ -120,3 +120,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: remove duplicate release creation from auto-version-tag
+
+> Date: Wed, 17 Dec 2025 22:55:13 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `91845fe28c49eb33bdb809200330bddd9f0b8851`
+
+---
+

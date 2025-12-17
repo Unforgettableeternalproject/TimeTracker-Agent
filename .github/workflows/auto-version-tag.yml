@@ -94,13 +94,5 @@ jobs:
             echo "📭 No changes to last_updated date"
           fi
       
-      - name: Create GitHub Release
-        if: steps.create_tag.outputs.tag_created == 'true'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.create_tag.outputs.tag_name }}
-          release_name: Release ${{ steps.create_tag.outputs.tag_name }}
-          draft: false
-          prerelease: false
+      # Note: Release creation is handled by release.yml workflow when tag is pushed
+      # This workflow only creates the tag and updates project.yaml
