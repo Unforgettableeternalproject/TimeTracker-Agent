@@ -4,7 +4,7 @@
 # Version Control
 # Update this version number to trigger automatic tagging
 # Format: vX.Y.Z or vX.Y.Z-suffix (e.g., v0.1.0, v0.2.0-beta, v1.0.0-stable)
-system_version: v0.2.2
+system_version: v0.2.2-hotfix
 
 # Project Information
 project_name: TimeTracker Agent

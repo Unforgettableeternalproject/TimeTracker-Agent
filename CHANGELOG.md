@@ -156,3 +156,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### chore: bump version to v0.2.2-hotfix for workflow testing
+
+> Date: Wed, 17 Dec 2025 23:07:58 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `052571089c35311c24c1295bbbdc1c9125a59b7a`
+
+---
+
