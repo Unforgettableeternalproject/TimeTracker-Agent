@@ -6,6 +6,14 @@ This file contains the version history and release notes for TimeTracker Agent.
 
 ---
 
+## v0.2.3 (2025-12-17)
+**Type**: Release
+
+### Changes
+chore: bump version to v0.2.3 to test fixed CD pipeline
+
+---
+
 ## v0.2.2-hotfix (2025-12-17)
 **Type**: Release
 
