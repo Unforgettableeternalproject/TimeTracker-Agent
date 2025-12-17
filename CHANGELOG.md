@@ -108,3 +108,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### chore: bump version to v0.2.1 to test complete CD pipeline
+
+> Date: Wed, 17 Dec 2025 22:52:42 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `a6e9a90adb23a3fdc26ad8815ed0a4754adf1572`
+
+---
+
