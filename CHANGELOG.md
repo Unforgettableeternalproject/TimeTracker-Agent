@@ -168,3 +168,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: upgrade upload-artifact to v4
+
+> Date: Wed, 17 Dec 2025 23:09:33 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `4cbcf9b39f6a85afb40f9847cdcc4df4ae487fda`
+
+---
+
