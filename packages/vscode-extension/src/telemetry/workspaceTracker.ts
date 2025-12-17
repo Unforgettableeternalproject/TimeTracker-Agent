@@ -129,7 +129,7 @@ export class WorkspaceTracker {
       // Setup Git commit watcher
       if (repoRoot) {
         console.log(`[TimeTracker] Setting up Git watcher...`);
-        this.setupGitWatcher(folderPath, workspace.id);
+        this.setupGitWatcher(folderPath, workspace.id, repoRoot);
       }
 
       this.trackers.set(folderPath, {
@@ -174,13 +174,40 @@ export class WorkspaceTracker {
   /**
    * Setup Git commit watcher for a workspace
    */
-  private setupGitWatcher(folderPath: string, workspaceId: number): void {
-    const repoRoot = this.gitService.getRepoRoot(folderPath);
-    if (!repoRoot) return;
+  private setupGitWatcher(_folderPath: string, workspaceId: number, repoRoot: string): void {
+    // First, check if there are any existing commits that we haven't processed yet
+    const recentCommits = this.gitService.getRecentCommits(repoRoot, '7 days ago', 50);
+
+    console.log(`[TimeTracker] Found ${recentCommits.length} recent commits in repo`);
+
+    // Process any commits we haven't seen yet (check by commit_sha to avoid duplicates)
+    for (const commit of recentCommits.reverse()) {
+      const exists = this.db.queryOne(
+        `SELECT id FROM work_items WHERE commit_sha = ? AND workspace_id = ?`,
+        [commit.sha, workspaceId]
+      );
+
+      if (!exists) {
+        console.log(`[TimeTracker] Processing existing commit: ${commit.sha.substring(0, 7)}`);
+        this.handleNewCommit(workspaceId, commit).catch(err =>
+          console.error('[TimeTracker] Error processing existing commit:', err)
+        );
+      } else {
+        console.log(`[TimeTracker] Skipping already processed commit: ${commit.sha.substring(0, 7)}`);
+      }
+    }
 
     // Watch for new commits using git log
     const disposable = this.gitService.watchCommits(repoRoot, async (commit) => {
-      await this.handleNewCommit(workspaceId, commit);
+      // Double check we haven't already processed this commit
+      const exists = this.db.queryOne(
+        `SELECT id FROM work_items WHERE commit_sha = ? AND workspace_id = ?`,
+        [commit.sha, workspaceId]
+      );
+      
+      if (!exists) {
+        await this.handleNewCommit(workspaceId, commit);
+      }
     });
 
     this.disposables.push(disposable);
@@ -194,10 +221,12 @@ export class WorkspaceTracker {
     commit: GitCommit
   ): Promise<void> {
     try {
-      console.log(`New commit detected: ${commit.sha.substring(0, 7)} - ${commit.message}`);
+      console.log(`[TimeTracker] New commit detected: ${commit.sha.substring(0, 7)} - ${commit.message}`);
 
       // Get unallocated sessions since last commit
       const unallocatedSessions = this.sessionService.getUnallocatedSessions(workspaceId);
+      
+      console.log(`[TimeTracker] Found ${unallocatedSessions.length} unallocated sessions`);
       
       if (!Array.isArray(unallocatedSessions)) {
         console.error('getUnallocatedSessions did not return an array:', unallocatedSessions);
@@ -211,60 +240,62 @@ export class WorkspaceTracker {
       );
 
     // Create work item for this commit
-    const repoRoot = this.gitService.getRepoRoot(
-      Array.from(this.trackers.values()).find(t => t.workspace.id === workspaceId)?.folder.uri.fsPath || ''
-    );
+    const trackerState = Array.from(this.trackers.values()).find(t => t.workspace.id === workspaceId);
+    const repoRoot = trackerState ? this.gitService.getRepoRoot(trackerState.folder.uri.fsPath) : null;
     
     const remoteUrl = repoRoot ? this.gitService.getRemoteUrl(repoRoot) : null;
-    const repoName = remoteUrl ? this.gitService.parseRepoName(remoteUrl) : '';
+    const repoName = remoteUrl 
+      ? this.gitService.parseRepoName(remoteUrl) 
+      : trackerState?.folder.name || 'unknown';
+      
     const githubUrl = remoteUrl && remoteUrl.includes('github.com')
       ? `https://github.com/${repoName}/commit/${commit.sha}`
       : null;
 
     // Parse commit type from message (e.g., "feat:", "fix:", "docs:")
-    const commitType = this.parseCommitType(commit.message);
-    
+    // For commits, the type field indicates it's a 'commit' (vs 'pr_merge' or 'manual')
     const workItem = this.db.execute(
-      `INSERT INTO work_items (workspace_id, type, title, detail, occurred_at, github_url, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO work_items (workspace_id, repo, type, title, detail, occurred_at, url, commit_sha, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       [
         workspaceId,
-        commitType,
+        repoName,
+        'commit', // This is a commit work item
         commit.message.split('\n')[0].substring(0, 200), // First line as title
         commit.message, // Full message as detail
         commit.date,
-        githubUrl
+        githubUrl,
+        commit.sha
       ] as any[]
     );
 
-    // Create allocations for unallocated sessions
-    if (unallocatedSessions.length > 0) {
-      for (const session of unallocatedSessions) {
-        this.db.execute(
-          `INSERT INTO allocations (work_item_id, session_id, allocated_seconds, created_at)
-           VALUES (?, ?, ?, datetime('now'))`,
-          [workItem.lastInsertRowid, session.id, session.active_seconds || 0] as any[]
-        );
+    console.log(`[TimeTracker] Work item created: ID=${workItem.lastInsertRowid}`);
 
-        // Mark session as allocated
+    // Create allocation for unallocated sessions
+    if (unallocatedSessions.length > 0) {
+      const totalHours = totalSeconds / 3600;
+      const commitDate = new Date(commit.date).toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      this.db.execute(
+        `INSERT INTO allocations (work_item_id, date, hours, created_at)
+         VALUES (?, ?, ?, datetime('now'))`,
+        [workItem.lastInsertRowid, commitDate, totalHours] as any[]
+      );
+
+      // Mark all unallocated sessions as allocated
+      for (const session of unallocatedSessions) {
         this.sessionService.updateSession(session.id, { is_allocated: true });
       }
 
       console.log(
-        `Allocated ${totalSeconds}s (${(totalSeconds / 3600).toFixed(2)}h) to commit ${commit.sha.substring(0, 7)}`
+        `[TimeTracker] Allocated ${totalSeconds}s (${totalHours.toFixed(2)}h) from ${unallocatedSessions.length} sessions to commit ${commit.sha.substring(0, 7)}`
       );
+    } else {
+      console.log(`[TimeTracker] No unallocated sessions to allocate to this commit`);
     }
     } catch (error) {
       console.error('Error handling commit:', error);
     }
-  }
-
-  /**
-   * Parse commit type from message
-   */
-  private parseCommitType(message: string): string {
-    const match = message.match(/^(feat|fix|docs|style|refactor|test|chore|perf)(\(.*?\))?:/i);
-    return match ? match[1].toLowerCase() : 'other';
   }
 
   /**

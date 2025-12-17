@@ -72,3 +72,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### feat: add CD pipeline and manual work item creation
+
+> Date: Wed, 17 Dec 2025 22:36:48 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `develop`
+
+> Commit: `ced4dd93fc4c8406e49b411bf6b8c047d1010536`
+
+---
+

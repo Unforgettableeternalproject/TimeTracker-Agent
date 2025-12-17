@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (v0.1.0, v1.0.0, etc.)
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Package VS Code Extension
+        run: |
+          cd packages/vscode-extension
+          pnpm exec vsce package --no-git-tag-version
+          mv *.vsix ../../timetracker-agent-extension.vsix
+          cd ../..
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          
+          # Extract changelog for this version
+          if [ -f "CHANGELOG.md" ]; then
+            awk "/## \[${VERSION}\]/,/## \[/{if(/## \[${VERSION}\]/)p=1;else if(/## \[/)exit;if(p)print}" CHANGELOG.md > release_notes.md
+          else
+            echo "Release version ${VERSION}" > release_notes.md
+          fi
+          
+          # If no specific version notes found, use generic message
+          if [ ! -s release_notes.md ]; then
+            echo "Release version ${VERSION}" > release_notes.md
+            echo "" >> release_notes.md
+            echo "### Installation" >> release_notes.md
+            echo "Download \`timetracker-agent-extension.vsix\` and install via:" >> release_notes.md
+            echo "\`\`\`bash" >> release_notes.md
+            echo "code --install-extension timetracker-agent-extension.vsix" >> release_notes.md
+            echo "\`\`\`" >> release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: TimeTracker Agent v${{ steps.get_version.outputs.VERSION }}
+          body_path: release_notes.md
+          files: |
+            timetracker-agent-extension.vsix
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: vsix-package
+          path: timetracker-agent-extension.vsix
+          retention-days: 30
