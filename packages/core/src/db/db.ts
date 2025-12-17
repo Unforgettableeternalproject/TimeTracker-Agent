@@ -25,6 +25,25 @@ export class DatabaseService {
   }
 
   /**
+   * Load WASM file from bundled location or node_modules
+   */
+  private loadWasmFile(): ArrayBuffer {
+    // Try bundled location first (for VS Code extension)
+    const bundledPath = path.join(__dirname, 'sql-wasm.wasm');
+    if (fs.existsSync(bundledPath)) {
+      return fs.readFileSync(bundledPath).buffer;
+    }
+
+    // Fallback to node_modules (for CLI and development)
+    try {
+      const modulePath = require.resolve('sql.js/dist/sql-wasm.wasm');
+      return fs.readFileSync(modulePath).buffer;
+    } catch {
+      throw new Error('Could not find sql-wasm.wasm file');
+    }
+  }
+
+  /**
    * Wait for database to be initialized
    */
   async waitForInit(): Promise<void> {
@@ -35,7 +54,11 @@ export class DatabaseService {
    * Initialize sql.js and load/create database
    */
   private async initializeDatabase(readonly: boolean): Promise<void> {
-    const sqlJs = await initSqlJs();
+    // Configure sql.js to load wasm from the correct location
+    const wasmBinary = this.loadWasmFile();
+    const sqlJs = await initSqlJs({
+      wasmBinary
+    });
     
     // Load existing database or create new one
     if (fs.existsSync(this.dbPath)) {

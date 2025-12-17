@@ -7,8 +7,12 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -64,8 +68,10 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run build",
+    "vscode:prepublish": "pnpm run bundle && pnpm run copy-wasm",
     "build": "tsc",
+    "bundle": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18",
+    "copy-wasm": "node -e \"const fs=require('fs'),path=require('path');const src=require.resolve('sql.js/dist/sql-wasm.wasm');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync(src,path.join('dist','sql-wasm.wasm'));\"",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
     "clean": "rm -rf dist"
@@ -75,6 +81,7 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
-    "@vscode/vsce": "^2.22.0"
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.27.2"
   }
 }

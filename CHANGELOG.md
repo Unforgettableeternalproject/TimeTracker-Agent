@@ -240,3 +240,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### feat: add esbuild for bundling and update .gitignore to exclude .tgz files. 12/18
+
+> Date: Thu, 18 Dec 2025 03:01:16 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `a6400d235fd83236898fb2eeb7a371ced7ab8d93`
+
+---
+
