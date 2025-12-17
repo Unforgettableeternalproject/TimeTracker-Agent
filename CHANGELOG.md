@@ -216,3 +216,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: use --no-frozen-lockfile in release workflow
+
+> Date: Wed, 17 Dec 2025 23:11:11 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `HEAD`
+
+> Commit: `099d02946108f2c7fa2f507fe2b3c6dc7fe55c45`
+
+---
+
+### chore: bump version to v0.3.0 - test complete fixed CD pipeline
+
+> Date: Wed, 17 Dec 2025 23:11:52 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `3e033555262feecda7a847d5a0c673372a25f66b`
+
+---
+
