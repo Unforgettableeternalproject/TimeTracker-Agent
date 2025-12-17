@@ -144,3 +144,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: use PAT token to trigger release workflow
+
+> Date: Wed, 17 Dec 2025 23:04:00 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `816251d0e6faf64568fcf9aa7c84f36df456a659`
+
+---
+
