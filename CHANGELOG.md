@@ -180,3 +180,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### fix: upgrade upload-artifact to v4
+
+> Date: Wed, 17 Dec 2025 23:09:33 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `HEAD`
+
+> Commit: `ea78652f7499a0b7ce1f9788c05f0a1b0e0afbfb`
+
+---
+
+### chore: bump version to v0.2.3 to test fixed CD pipeline
+
+> Date: Wed, 17 Dec 2025 23:10:11 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `ea8e818e254e08011e065a9332de1e792e31decb`
+
+---
+
