@@ -4,12 +4,11 @@
 # Version Control
 # Update this version number to trigger automatic tagging
 # Format: vX.Y.Z or vX.Y.Z-suffix (e.g., v0.1.0, v0.2.0-beta, v1.0.0-stable)
-system_version: v0.3.0
+system_version: v0.4.2
 
 # Project Information
 project_name: TimeTracker Agent
 project_description: Automatic work time tracking assistant for developers
 
 # Metadata
-created_date: 2024-12-16
 last_updated: 2025-12-17

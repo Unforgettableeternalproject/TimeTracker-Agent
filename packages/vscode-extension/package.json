@@ -68,16 +68,17 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run bundle && pnpm run copy-wasm",
+    "vscode:prepublish": "pnpm run bundle && pnpm run copy-assets",
     "build": "tsc",
     "bundle": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18",
-    "copy-wasm": "node -e \"const fs=require('fs'),path=require('path');const src=require.resolve('sql.js/dist/sql-wasm.wasm');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync(src,path.join('dist','sql-wasm.wasm'));\"",
+    "copy-assets": "node scripts/copy-assets.js",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@timesheet-agent/core": "workspace:*"
+    "@timesheet-agent/core": "workspace:*",
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

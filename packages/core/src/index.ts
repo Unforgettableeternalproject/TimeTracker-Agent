@@ -4,5 +4,6 @@ export * from './tracker/sessionService';
 export * from './tracker/workspaceManager';
 export * from './tracker/activityAggregator';
 export * from './tracker/idlePolicy';
+export * from './tracker/allocationService';
 export * from './git/gitService';
 export * from './git/githubLink';

@@ -252,3 +252,15 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+### feat: implement allocation service and integrate with workspace tracker; update export functionality and version to v0.4.2. 12/18
+
+> Date: Thu, 18 Dec 2025 20:44:35 +0800
+
+> Author: Bernie <ptyc4076@gmail.com>
+
+> Branch: `main`
+
+> Commit: `5f958b062c62fe8dc4633d0ed412bacf3c3fb8ec`
+
+---
+

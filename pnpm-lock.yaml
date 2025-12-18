@@ -29,18 +29,6 @@ importers:
 
   packages/cli:
     dependencies:
-      '@timesheet-agent/core':
-        specifier: workspace:*
-        version: link:../core
-      chalk:
-        specifier: ^4.1.2
-        version: 4.1.2
-      commander:
-        specifier: ^11.1.0
-        version: 11.1.0
-      date-fns:
-        specifier: ^3.0.6
-        version: 3.6.0
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
@@ -82,6 +70,9 @@ importers:
       '@timesheet-agent/core':
         specifier: workspace:*
         version: link:../core
+      exceljs:
+        specifier: ^4.4.0
+        version: 4.4.0
     devDependencies:
       '@types/vscode':
         specifier: ^1.85.0
@@ -1072,10 +1063,6 @@ packages:
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
-
-  commander@11.1.0:
-    resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
-    engines: {node: '>=16'}
 
   commander@6.2.1:
     resolution: {integrity: sha512-U7VdrJFnJgo4xjrHpTzu0yrHPGImdsmD95ZlgYSEajAn2JKzDhDTPG9kBTefmObL2w/ngeZnilk+OV9CG3d7UA==}
@@ -3848,8 +3835,6 @@ snapshots:
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
-
-  commander@11.1.0: {}
 
   commander@6.2.1: {}
 
